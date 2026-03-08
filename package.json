@@ -1,0 +1,13 @@
+{
+  "name": "sivachandar-resume",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build required for static site'",
+    "start": "npx serve resume"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
