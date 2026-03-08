@@ -103,7 +103,7 @@ Background:
                 'X-Title': 'Sivachandar Resume'
             },
             body: JSON.stringify({
-                model: 'meta-llama/llama-3.1-8b-instruct',
+                model: 'google/gemini-2.0-flash-001',
                 messages: conversationHistory
             })
         });
@@ -180,7 +180,7 @@ Background:
                     'X-Title': 'Sivachandar Resume'
                 },
                 body: JSON.stringify({
-                    model: 'meta-llama/llama-3.1-8b-instruct',
+                    model: 'google/gemini-2.0-flash-001',
                     messages: [
                         { role: 'system', content: sivaContext },
                         { role: 'user', content: promptText }
