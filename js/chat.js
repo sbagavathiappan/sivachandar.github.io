@@ -1,9 +1,9 @@
-// AI Chat Module
+// AI Chat Module - Client-side OpenRouter
 (function() {
     'use strict';
 
-    const API_KEY = ''; // Set via environment variable in production
-    const API_ENDPOINT = '/api/chat'; // Serverless API endpoint
+    const API_KEY = "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";
+    const API_URL = "https://openrouter.ai/api/v1/chat/completions";
     
     const sivaContext = `You are the AI Digital Twin of Sivachandar (Siva) Bagavathiappan. Respond in a professional, highly articulate, authoritative yet approachable executive tone (like an experienced VP or Senior Director). Keep answers concise and strictly relevant to his resume. 
 Background:
@@ -13,7 +13,9 @@ Background:
 - Skills: Java, .Net, NextJS, React, NodeJS, Kubernetes, Kafka, MongoDB, GCP, AWS, Azure, Shopify, Bloomreach, Manhattan WMS.
 - Achievements: Scaled FreshDirect's business by 43%. Managed $5M budgets and teams of 50+. Won Webby Awards for Best User Experience. Delivered critical outbreak management systems for NY DOH.`;
 
-    let conversationHistory = [];
+    let conversationHistory = [
+        { role: 'system', content: sivaContext }
+    ];
 
     // Modal Functions
     window.openChatModal = function() {
@@ -88,52 +90,36 @@ Background:
         return id;
     }
 
-    // API Call with fallback to direct Gemini
-    async function fetchWithRetry(url, options, retries = 3) {
-        let delay = 1000;
-        for (let i = 0; i < retries; i++) {
-            try {
-                const response = await fetch(url, options);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
-            } catch (e) {
-                if (i === retries - 1) throw e;
-                await new Promise(res => setTimeout(res, delay));
-                delay *= 2;
-            }
-        }
-    }
-
+    // API Call
     async function sendMessage(message) {
-        const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-        
-        const payload = {
-            contents: conversationHistory,
-            systemInstruction: { parts: [{ text: sivaContext }] }
-        };
+        conversationHistory.push({ role: 'user', content: message });
 
-        // Try serverless API first, fallback to direct Gemini
-        let data;
-        try {
-            data = await fetchWithRetry(API_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message, context: sivaContext })
-            });
-        } catch {
-            // Fallback to direct Gemini if serverless API fails
-            if (API_KEY) {
-                data = await fetchWithRetry(`${GEMINI_ENDPOINT}?key=${API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            } else {
-                throw new Error('No API available');
-            }
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${API_KEY}`,
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'Sivachandar Resume'
+            },
+            body: JSON.stringify({
+                model: 'meta-llama/llama-3.1-8b-instruct',
+                messages: conversationHistory
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content;
+        
+        if (text) {
+            conversationHistory.push({ role: 'assistant', content: text });
         }
         
-        return data;
+        return text;
     }
 
     // Handle Form Submit
@@ -147,29 +133,22 @@ Background:
 
         appendMessage('user', message);
         chatInput.value = '';
-        conversationHistory.push({ role: "user", parts: [{ text: message }] });
         const typingId = appendTypingIndicator();
 
         try {
-            const data = await sendMessage(message);
+            const responseText = await sendMessage(message);
             document.getElementById(typingId)?.remove();
-            
-            let responseText;
-            if (data.response) {
-                responseText = data.response;
-            } else {
-                responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            }
             
             if (responseText) {
                 const formattedText = responseText.replace(/\n/g, '<br>');
                 appendMessage('model', formattedText);
-                conversationHistory.push({ role: "model", parts: [{ text: responseText }] });
+            } else {
+                appendMessage('model', '<span class="text-red-500">No response received.</span>');
             }
         } catch (error) {
             document.getElementById(typingId)?.remove();
-            appendMessage('model', '<span class="text-red-500">AI temporarily unavailable. Please try again later.</span>');
-            conversationHistory.pop();
+            appendMessage('model', '<span class="text-red-500">AI temporarily unavailable. Please try again.</span>');
+            console.error(error);
         }
     };
 
@@ -191,36 +170,27 @@ Background:
 
         const promptText = `Analyze the following Job Description against Sivachandar Bagavathiappan's profile. Write a concise, 3-paragraph executive summary explaining why he is a strong fit. Use an objective, highly professional tone. Highlight specific matching skills. Format the output with clear HTML paragraphs (<p>). Do not use markdown backticks.\n\nJob Description: ${jdInput}`;
 
-        const payload = {
-            contents: [{ parts: [{ text: promptText }] }],
-            systemInstruction: { parts: [{ text: sivaContext }] }
-        };
-
-        const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-
         try {
-            let data;
-            try {
-                data = await fetchWithRetry(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: promptText, context: sivaContext })
-                });
-                const text = data.response;
-                resultContent.innerHTML = text || '<p>Analysis complete, but no text was generated.</p>';
-            } catch {
-                if (API_KEY) {
-                    data = await fetchWithRetry(`${GEMINI_ENDPOINT}?key=${API_KEY}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    resultContent.innerHTML = text || '<p>Analysis complete, but no text was generated.</p>';
-                } else {
-                    throw new Error('No API available');
-                }
-            }
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`,
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Sivachandar Resume'
+                },
+                body: JSON.stringify({
+                    model: 'meta-llama/llama-3.1-8b-instruct',
+                    messages: [
+                        { role: 'system', content: sivaContext },
+                        { role: 'user', content: promptText }
+                    ]
+                })
+            });
+
+            const data = await response.json();
+            const text = data.choices?.[0]?.message?.content;
+            resultContent.innerHTML = text || '<p>Analysis complete, but no text was generated.</p>';
         } catch (error) {
             resultContent.innerHTML = '<p class="text-red-500">Error generating analysis. Please try again.</p>';
         } finally {
