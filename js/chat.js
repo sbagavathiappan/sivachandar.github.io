@@ -103,13 +103,14 @@ Background:
                 'X-Title': 'Sivachandar Resume'
             },
             body: JSON.stringify({
-                model: 'google/gemini-2.0-flash-001',
+                model: 'openai/gpt-3.5-turbo',
                 messages: conversationHistory
             })
         });
 
         if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`API error ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
@@ -180,7 +181,7 @@ Background:
                     'X-Title': 'Sivachandar Resume'
                 },
                 body: JSON.stringify({
-                    model: 'google/gemini-2.0-flash-001',
+                    model: 'openai/gpt-3.5-turbo',
                     messages: [
                         { role: 'system', content: sivaContext },
                         { role: 'user', content: promptText }
