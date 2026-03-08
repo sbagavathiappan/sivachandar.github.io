@@ -99,7 +99,7 @@ Background:
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${API_KEY}`,
-                'HTTP-Referer': window.location.origin,
+                'HTTP-Referer': 'https://sbagavathiappan.github.io',
                 'X-Title': 'Sivachandar Resume'
             },
             body: JSON.stringify({
@@ -147,7 +147,7 @@ Background:
             }
         } catch (error) {
             document.getElementById(typingId)?.remove();
-            appendMessage('model', '<span class="text-red-500">AI temporarily unavailable. Please try again.</span>');
+            appendMessage('model', '<span class="text-red-500">Error: ' + error.message + '</span>');
             console.error(error);
         }
     };
