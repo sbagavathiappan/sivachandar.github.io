@@ -13,6 +13,14 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--brand-pearl);
+    /* Baseline typography for compact, viewport-friendly layout */
+    font-family: var(--font-sans, Inter, sans-serif);
+    line-height: 1.65;
+}
+
+/* Paragraph rhythm for readability */
+p {
+    margin-bottom: 1rem;
 }
 
 /* Scroll Reveal Animations */
