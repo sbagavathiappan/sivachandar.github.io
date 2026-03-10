@@ -18,6 +18,23 @@ body {
     line-height: 1.65;
 }
 
+/* Skip link style for accessibility */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: #111;
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  z-index: 9999;
+  border-radius: 0.25rem;
+}
+
 /* Paragraph rhythm for readability */
 p {
     margin-bottom: 1rem;
